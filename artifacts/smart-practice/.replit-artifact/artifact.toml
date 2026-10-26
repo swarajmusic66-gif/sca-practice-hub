@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "MS-CIT Smart Practice Portal"
+version = "1.0.0"
+id = "artifacts/smart-practice"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19852
+
+[services.development]
+run = "pnpm --filter @workspace/smart-practice run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smart-practice", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/smart-practice/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19852"
+BASE_PATH = "/"

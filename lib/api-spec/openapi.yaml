@@ -1,0 +1,1196 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: MS-CIT Smart Practice Portal API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: courses
+    description: Course management
+  - name: students
+    description: Student management
+  - name: questions
+    description: Question bank management
+  - name: tests
+    description: Practice test engine
+  - name: admin
+    description: Admin dashboard
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── AUTH ───────────────────────────────────────────────────────────────────
+  /auth/student-login:
+    post:
+      operationId: studentLogin
+      tags: [auth]
+      summary: Student login with student ID and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentLoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/admin-login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current session info
+      responses:
+        "200":
+          description: Session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionInfo"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── COURSES ────────────────────────────────────────────────────────────────
+  /courses:
+    get:
+      operationId: listCourses
+      tags: [courses]
+      summary: List all courses
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      operationId: createCourse
+      tags: [courses]
+      summary: Create a new course (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "201":
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+
+  /courses/{id}:
+    get:
+      operationId: getCourse
+      tags: [courses]
+      summary: Get a course by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCourse
+      tags: [courses]
+      summary: Update a course (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseUpdate"
+      responses:
+        "200":
+          description: Updated course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+    delete:
+      operationId: deleteCourse
+      tags: [courses]
+      summary: Delete a course (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── STUDENTS ───────────────────────────────────────────────────────────────
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List all students (admin)
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: batch
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Register a new student (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Student created with generated student ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update student details (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdate"
+      responses:
+        "200":
+          description: Updated student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete a student (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /students/{id}/stats:
+    get:
+      operationId: getStudentStats
+      tags: [students]
+      summary: Get student performance stats (total tests, highest score, avg score)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentStats"
+
+  # ── QUESTIONS ──────────────────────────────────────────────────────────────
+  /questions:
+    get:
+      operationId: listQuestions
+      tags: [questions]
+      summary: List questions (optionally filtered by course, topic, difficulty)
+      parameters:
+        - name: courseId
+          in: query
+          schema:
+            type: integer
+        - name: topic
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [easy, medium, hard]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of questions with total count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestionListResult"
+    post:
+      operationId: createQuestion
+      tags: [questions]
+      summary: Add a question to a course (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInput"
+      responses:
+        "201":
+          description: Question created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+
+  /questions/bulk-upload:
+    post:
+      operationId: bulkUploadQuestions
+      tags: [questions]
+      summary: Bulk upload questions from JSON array (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkQuestionInput"
+      responses:
+        "201":
+          description: Bulk upload result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkUploadResult"
+
+  /questions/{id}:
+    patch:
+      operationId: updateQuestion
+      tags: [questions]
+      summary: Update a question (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionUpdate"
+      responses:
+        "200":
+          description: Updated question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+    delete:
+      operationId: deleteQuestion
+      tags: [questions]
+      summary: Delete a question (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── TESTS ──────────────────────────────────────────────────────────────────
+  /tests/start:
+    post:
+      operationId: startTest
+      tags: [tests]
+      summary: Start a new practice test for the logged-in student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartTestInput"
+      responses:
+        "201":
+          description: Test session with randomized questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestSession"
+        "400":
+          description: Not enough questions in course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tests/{attemptId}/submit:
+    post:
+      operationId: submitTest
+      tags: [tests]
+      summary: Submit test answers and get result
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTestInput"
+      responses:
+        "200":
+          description: Test result with score breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+
+  /tests/history:
+    get:
+      operationId: getTestHistory
+      tags: [tests]
+      summary: Get test attempt history for the logged-in student
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of past test attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TestAttempt"
+
+  /tests/{attemptId}:
+    get:
+      operationId: getTestAttempt
+      tags: [tests]
+      summary: Get a specific test attempt with full result breakdown
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Test attempt detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── ADMIN DASHBOARD ────────────────────────────────────────────────────────
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Admin overview — total students, courses, questions, recent activity
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /admin/recent-attempts:
+    get:
+      operationId: getRecentAttempts
+      tags: [admin]
+      summary: Recent test attempts across all students (admin feed)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentAttempt"
+
+  /admin/course-stats:
+    get:
+      operationId: getCourseStats
+      tags: [admin]
+      summary: Per-course stats — student count, question count, avg score
+      responses:
+        "200":
+          description: Course statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CourseStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    # ── AUTH ──────────────────────────────────────────────────────────────────
+    StudentLoginInput:
+      type: object
+      required: [studentId, password]
+      properties:
+        studentId:
+          type: string
+          description: e.g. MSCIT-2026-0001
+        password:
+          type: string
+
+    AdminLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthResult:
+      type: object
+      required: [role, user]
+      properties:
+        role:
+          type: string
+          enum: [student, admin]
+        user:
+          $ref: "#/components/schemas/SessionInfo"
+
+    SessionInfo:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [student, admin]
+        studentId:
+          type: ["string", "null"]
+        studentDbId:
+          type: ["integer", "null"]
+        fullName:
+          type: ["string", "null"]
+        courseId:
+          type: ["integer", "null"]
+        courseName:
+          type: ["string", "null"]
+        adminId:
+          type: ["string", "null"]
+
+    # ── COURSES ───────────────────────────────────────────────────────────────
+    Course:
+      type: object
+      required: [id, courseCode, courseName, status, createdAt]
+      properties:
+        id:
+          type: integer
+        courseCode:
+          type: string
+        courseName:
+          type: string
+        description:
+          type: ["string", "null"]
+        duration:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, inactive]
+        trainerName:
+          type: ["string", "null"]
+        questionCount:
+          type: integer
+        studentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    CourseInput:
+      type: object
+      required: [courseCode, courseName]
+      properties:
+        courseCode:
+          type: string
+        courseName:
+          type: string
+        description:
+          type: string
+        duration:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        trainerName:
+          type: string
+
+    CourseUpdate:
+      type: object
+      properties:
+        courseCode:
+          type: string
+        courseName:
+          type: string
+        description:
+          type: string
+        duration:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        trainerName:
+          type: string
+
+    # ── STUDENTS ──────────────────────────────────────────────────────────────
+    Student:
+      type: object
+      required: [id, studentId, fullName, mobile, courseId, courseName, batch, admissionDate, createdAt]
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: string
+          description: Auto-generated, e.g. MSCIT-2026-0001
+        fullName:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        batch:
+          type: string
+        trainer:
+          type: ["string", "null"]
+        admissionDate:
+          type: string
+        courseDuration:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    StudentInput:
+      type: object
+      required: [fullName, mobile, courseId, batch, admissionDate]
+      properties:
+        fullName:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        address:
+          type: string
+        courseId:
+          type: integer
+        batch:
+          type: string
+        trainer:
+          type: string
+        admissionDate:
+          type: string
+        courseDuration:
+          type: string
+        password:
+          type: string
+
+    StudentUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        address:
+          type: string
+        courseId:
+          type: integer
+        batch:
+          type: string
+        trainer:
+          type: string
+        admissionDate:
+          type: string
+        courseDuration:
+          type: string
+        password:
+          type: string
+
+    StudentStats:
+      type: object
+      required: [totalAttempts, highestScore, averageScore, highestPercentage, averagePercentage]
+      properties:
+        totalAttempts:
+          type: integer
+        highestScore:
+          type: integer
+        averageScore:
+          type: number
+        highestPercentage:
+          type: number
+        averagePercentage:
+          type: number
+        recentAttempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestAttempt"
+
+    # ── QUESTIONS ─────────────────────────────────────────────────────────────
+    Question:
+      type: object
+      required: [id, courseId, courseName, topic, question, optionA, optionB, optionC, optionD, correctAnswer, difficulty, createdAt]
+      properties:
+        id:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        topic:
+          type: string
+        question:
+          type: string
+        optionA:
+          type: string
+        optionB:
+          type: string
+        optionC:
+          type: string
+        optionD:
+          type: string
+        correctAnswer:
+          type: string
+          enum: [A, B, C, D]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        createdAt:
+          type: string
+          format: date-time
+
+    QuestionInput:
+      type: object
+      required: [courseId, topic, question, optionA, optionB, optionC, optionD, correctAnswer, difficulty]
+      properties:
+        courseId:
+          type: integer
+        topic:
+          type: string
+        question:
+          type: string
+        optionA:
+          type: string
+        optionB:
+          type: string
+        optionC:
+          type: string
+        optionD:
+          type: string
+        correctAnswer:
+          type: string
+          enum: [A, B, C, D]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+
+    QuestionUpdate:
+      type: object
+      properties:
+        topic:
+          type: string
+        question:
+          type: string
+        optionA:
+          type: string
+        optionB:
+          type: string
+        optionC:
+          type: string
+        optionD:
+          type: string
+        correctAnswer:
+          type: string
+          enum: [A, B, C, D]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+
+    QuestionListResult:
+      type: object
+      required: [questions, total]
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        total:
+          type: integer
+
+    BulkQuestionInput:
+      type: object
+      required: [courseId, questions]
+      properties:
+        courseId:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionInput"
+
+    BulkUploadResult:
+      type: object
+      required: [inserted, failed]
+      properties:
+        inserted:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    # ── TESTS ─────────────────────────────────────────────────────────────────
+    StartTestInput:
+      type: object
+      required: [questionCount]
+      properties:
+        questionCount:
+          type: integer
+          default: 50
+
+    TestQuestion:
+      type: object
+      required: [id, topic, question, optionA, optionB, optionC, optionD]
+      properties:
+        id:
+          type: integer
+        topic:
+          type: string
+        question:
+          type: string
+        optionA:
+          type: string
+        optionB:
+          type: string
+        optionC:
+          type: string
+        optionD:
+          type: string
+
+    TestSession:
+      type: object
+      required: [attemptId, courseId, courseName, questions, totalQuestions, startedAt]
+      properties:
+        attemptId:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestQuestion"
+        totalQuestions:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+
+    AnswerInput:
+      type: object
+      required: [questionId, selectedAnswer]
+      properties:
+        questionId:
+          type: integer
+        selectedAnswer:
+          type: string
+          enum: [A, B, C, D]
+
+    SubmitTestInput:
+      type: object
+      required: [answers, durationSeconds]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerInput"
+        durationSeconds:
+          type: integer
+
+    AnswerReview:
+      type: object
+      required: [questionId, question, selectedAnswer, correctAnswer, isCorrect, topic]
+      properties:
+        questionId:
+          type: integer
+        question:
+          type: string
+        optionA:
+          type: string
+        optionB:
+          type: string
+        optionC:
+          type: string
+        optionD:
+          type: string
+        selectedAnswer:
+          type: ["string", "null"]
+        correctAnswer:
+          type: string
+        isCorrect:
+          type: boolean
+        topic:
+          type: string
+
+    TestResult:
+      type: object
+      required: [attemptId, score, totalQuestions, correct, wrong, skipped, percentage, durationSeconds, completedAt, answers]
+      properties:
+        attemptId:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        correct:
+          type: integer
+        wrong:
+          type: integer
+        skipped:
+          type: integer
+        percentage:
+          type: number
+        durationSeconds:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerReview"
+
+    TestAttempt:
+      type: object
+      required: [id, courseId, courseName, score, totalQuestions, correct, wrong, percentage, durationSeconds, completedAt]
+      properties:
+        id:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        correct:
+          type: integer
+        wrong:
+          type: integer
+        skipped:
+          type: integer
+        percentage:
+          type: number
+        durationSeconds:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+
+    # ── ADMIN DASHBOARD ───────────────────────────────────────────────────────
+    AdminDashboard:
+      type: object
+      required: [totalStudents, totalCourses, totalQuestions, totalAttempts, todayAttempts]
+      properties:
+        totalStudents:
+          type: integer
+        totalCourses:
+          type: integer
+        totalQuestions:
+          type: integer
+        totalAttempts:
+          type: integer
+        todayAttempts:
+          type: integer
+
+    RecentAttempt:
+      type: object
+      required: [attemptId, studentId, studentName, courseName, score, totalQuestions, percentage, completedAt]
+      properties:
+        attemptId:
+          type: integer
+        studentId:
+          type: string
+        studentName:
+          type: string
+        courseName:
+          type: string
+        score:
+          type: integer
+        totalQuestions:
+          type: integer
+        percentage:
+          type: number
+        completedAt:
+          type: string
+          format: date-time
+
+    CourseStats:
+      type: object
+      required: [courseId, courseName, studentCount, questionCount, totalAttempts, averagePercentage]
+      properties:
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        studentCount:
+          type: integer
+        questionCount:
+          type: integer
+        totalAttempts:
+          type: integer
+        averagePercentage:
+          type: number

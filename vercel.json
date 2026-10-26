@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "PORT=3000 BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/smart-practice run build",
+  "outputDirectory": "artifacts/smart-practice/dist/public",
+  "functions": { "api/index.js": { "maxDuration": 30 } },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/((?!assets/|favicon.svg|robots.txt).*)", "destination": "/index.html" }
+  ]
+}
